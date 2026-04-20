@@ -1,7 +1,7 @@
 import type { ConnectRouter } from "@connectrpc/connect"
 import { ToolServerManagerService } from "@openzerg/common/gen/toolservermanager/v1_pb.js"
 import type { DB } from "./db.js"
-import type { PodClient } from "@openzerg/pod-client"
+import type { PodClient } from "@openzerg/common/pod-client"
 import { registerContainerHandlers } from "./handlers/containers.js"
 import { registerToolHandlers } from "./handlers/tools.js"
 

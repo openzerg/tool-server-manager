@@ -4,7 +4,7 @@ import { connectNodeAdapter } from "@connectrpc/connect-node"
 import { ToolServerManagerClient } from "@openzerg/common"
 import { openDB, autoMigrate } from "../src/db.js"
 import { createTSMRouter } from "../src/router.js"
-import { PodmanPodClient, type PodClient } from "@openzerg/pod-client"
+import { PodmanPodClient, type PodClient } from "@openzerg/common/pod-client"
 import { randomUUID } from "node:crypto"
 
 const PG_PORT = 15435

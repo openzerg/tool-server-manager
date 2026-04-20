@@ -2,7 +2,7 @@ import { createServer } from "node:http"
 import { connectNodeAdapter } from "@connectrpc/connect-node"
 import { autoMigrate, openDB } from "./db.js"
 import { createTSMRouter } from "./router.js"
-import { PodmanPodClient } from "@openzerg/pod-client"
+import { PodmanPodClient } from "@openzerg/common/pod-client"
 
 const PORT = Number(process.env.PORT || 25021)
 const DATABASE_URL = process.env.DATABASE_URL || "postgres://localhost:5432/tsm"
