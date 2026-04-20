@@ -1,10 +1,10 @@
 FROM oven/bun:alpine AS builder
 RUN apk add --no-cache git
 WORKDIR /app
-COPY tool-server-manager/package.json tool-server-manager/bun.lock* ./
+COPY package.json bun.lock* ./
 RUN bun install
-COPY tool-server-manager/src/ src/
-COPY tool-server-manager/tsconfig.json ./
+COPY src/ src/
+COPY tsconfig.json ./
 RUN bun build --compile src/main.ts --outfile tool-server-manager
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates libstdc++
