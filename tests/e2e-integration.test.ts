@@ -6,22 +6,22 @@ import { createClient } from "@connectrpc/connect"
 import { randomUUID } from "node:crypto"
 import { openDB, autoMigrate } from "../src/db.js"
 import { createTSMRouter } from "../src/router.js"
-import { PodmanPodClient } from "@openzerg/common/pod-client"
-import { ToolServerManagerService } from "@openzerg/common/gen/toolservermanager/v1_pb.js"
-import { WorkspaceManagerService } from "@openzerg/common/gen/workspacemanager/v1_pb.js"
+import { PodmanPodClient } from "@openzerg/common-typescript/pod-client"
+import { ToolServerManagerService } from "@openzerg/common-typescript/gen/toolservermanager/v1_pb.js"
+import { WorkspaceManagerService } from "@openzerg/common-typescript/gen/workspacemanager/v1_pb.js"
 import { create } from "@bufbuild/protobuf"
 import { EmptySchema } from "@bufbuild/protobuf/wkt"
 import {
   StartToolServerRequestSchema,
   StopToolServerRequestSchema,
   ListToolServersRequestSchema,
-} from "@openzerg/common/gen/toolservermanager/v1_pb.js"
+} from "@openzerg/common-typescript/gen/toolservermanager/v1_pb.js"
 import {
   CreateWorkspaceRequestSchema,
   StartWorkerRequestSchema,
   StopWorkerRequestSchema,
   GetWorkerStatusRequestSchema,
-} from "@openzerg/common/gen/workspacemanager/v1_pb.js"
+} from "@openzerg/common-typescript/gen/workspacemanager/v1_pb.js"
 import { execSync } from "node:child_process"
 
 const PG_PORT = 15436

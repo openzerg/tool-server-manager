@@ -7,14 +7,7 @@
     "types": ["bun-types"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "paths": {
-      "@openzerg/common": ["../common-spec/client/src/index.ts"],
-      "@openzerg/common/*": ["../common-spec/client/src/*"],
-      "@openzerg/common/gen/*": ["../common-spec/generated/ts/gen/*"],
-      "@openzerg/common/entities/*": ["../common-spec/generated/ts/entities/*"],
-      "@openzerg/common/pod-client": ["../common/common-spec/pod-client/index.ts"]
-    }
+    "noEmit": true
   },
   "include": ["src/**/*"]
 }

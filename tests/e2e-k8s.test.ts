@@ -1,10 +1,10 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test"
 import { createServer, type Server } from "node:http"
 import { connectNodeAdapter } from "@connectrpc/connect-node"
-import { ToolServerManagerClient } from "@openzerg/common"
+import { ToolServerManagerClient } from "@openzerg/common-typescript"
 import { openDB, autoMigrate } from "../src/db.js"
 import { createTSMRouter } from "../src/router.js"
-import { KubernetesClient } from "@openzerg/common/pod-client"
+import { KubernetesClient } from "@openzerg/common-typescript/pod-client"
 import { randomUUID } from "node:crypto"
 import { execSync } from "node:child_process"
 

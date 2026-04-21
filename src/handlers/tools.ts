@@ -1,41 +1,42 @@
-import { randomUUID } from "node:crypto"
 import type { DB } from "../db.js"
-import { ToolServiceClient } from "@openzerg/common"
-
-const now = () => BigInt(Date.now())
+import { ToolServiceClient } from "@openzerg/common-typescript"
+import { gelQuery } from "@openzerg/common-typescript/gel"
+import * as queries from "../generated/queries.js"
 
 export function registerToolHandlers(db: DB) {
   return {
     async refreshToolCache(req: { instanceType: string }) {
-      const instances = await db.selectFrom("registry_instances").selectAll()
-        .where("instanceType", "=", req.instanceType)
-        .where("lifecycle", "=", "active")
-        .execute()
+      const instancesResult = await gelQuery(() =>
+        queries.tsmSelectActiveByType(db, { instanceType: req.instanceType })
+      )
+      if (instancesResult.isErr()) return { toolCount: 0 }
+      const instances = instancesResult.value
 
       let totalTools = 0
       for (const inst of instances) {
-        await db.deleteFrom("cached_tools")
-          .where("serviceId", "=", inst.id).execute()
+        await gelQuery(() =>
+          queries.tsmDeleteByService(db, { instanceId: inst.id })
+        )
 
         const client = new ToolServiceClient({ baseURL: inst.publicUrl })
         const result = await client.listTools()
         if (result.isErr()) continue
 
-        const ts = now()
+        const ts = Number(BigInt(Date.now()))
         for (const tool of result.value.tools) {
-          await db.insertInto("cached_tools").values({
-            id: randomUUID(),
-            serviceId: inst.id,
-            toolName: tool.name,
-            description: tool.description,
-            inputSchemaJson: tool.inputSchemaJson,
-            outputSchemaJson: tool.outputSchemaJson,
-            group: tool.group,
-            priority: tool.priority,
-            dependencies: JSON.stringify(tool.dependencies ?? []),
-            createdAt: ts,
-            updatedAt: ts,
-          }).execute()
+          await gelQuery(() =>
+            queries.tsmInsertCachedTool(db, {
+              instanceId: inst.id,
+              toolName: tool.name,
+              description: tool.description,
+              inputSchemaJson: tool.inputSchemaJson,
+              outputSchemaJson: tool.outputSchemaJson,
+              group: tool.group,
+              priority: tool.priority,
+              dependencies: JSON.stringify(tool.dependencies ?? []),
+              ts,
+            })
+          )
         }
         totalTools += result.value.tools.length
       }
@@ -46,36 +47,44 @@ export function registerToolHandlers(db: DB) {
       const types = req.toolServerTypes
       if (!types.length) return { tools: [], systemContext: "", toolServerUrls: [] }
 
-      const instances = await db.selectFrom("registry_instances").selectAll()
-        .where("instanceType", "in", types)
-        .where("lifecycle", "=", "active")
-        .execute()
+      const instancesResult = await gelQuery(() =>
+        queries.tsmSelectActiveByType(db, { instanceType: types[0] })
+      )
+      if (instancesResult.isErr()) return { tools: [], systemContext: "", toolServerUrls: [] }
+
+      const allInstances: any[] = []
+      for (const t of types) {
+        const r = await gelQuery(() =>
+          queries.tsmSelectActiveByType(db, { instanceType: t })
+        )
+        if (r.isOk()) allInstances.push(...r.value)
+      }
 
       const seen = new Set<string>()
       const toolServerUrls: Array<{ name: string; url: string; config: Record<string, string> }> = []
       const serviceIds: string[] = []
 
-      for (const inst of instances) {
+      for (const inst of allInstances) {
         if (seen.has(inst.instanceType)) continue
         seen.add(inst.instanceType)
         toolServerUrls.push({
           name: inst.instanceType,
           url: inst.publicUrl,
-          config: (typeof inst.metadata === "string" ? JSON.parse(inst.metadata || "{}") : inst.metadata ?? {}) as Record<string, string>,
+          config: {} as Record<string, string>,
         })
         serviceIds.push(inst.id)
       }
 
       if (serviceIds.length === 0) return { tools: [], systemContext: "", toolServerUrls }
 
-      const cachedTools = await db.selectFrom("cached_tools").selectAll()
-        .where("serviceId", "in", serviceIds)
-        .orderBy("priority", "desc")
-        .execute()
+      const cachedToolsResult = await gelQuery(() =>
+        queries.tsmSelectByServices(db, { ids: serviceIds })
+      )
+      if (cachedToolsResult.isErr()) return { tools: [], systemContext: "", toolServerUrls }
 
       const toolNames = new Set<string>()
-      const tools: Array<{ name: string; description: string; inputSchemaJson: string; outputSchemaJson: string; group: string; priority: number }> = []
-      for (const ct of cachedTools) {
+      const tools = []
+      for (const ct of cachedToolsResult.value) {
         if (!toolNames.has(ct.toolName)) {
           toolNames.add(ct.toolName)
           tools.push({
@@ -93,24 +102,22 @@ export function registerToolHandlers(db: DB) {
     },
 
     async executeTool(req: { sessionId: string; toolName: string; argsJson: string; sessionToken: string }) {
-      const cached = await db.selectFrom("cached_tools").select(["serviceId"])
-        .where("toolName", "=", req.toolName)
-        .executeTakeFirst()
-
-      if (!cached) {
+      const cachedResult = await gelQuery(() =>
+        queries.tsmSelectByToolName(db, { toolName: req.toolName })
+      )
+      if (cachedResult.isErr() || !cachedResult.value) {
         return { resultJson: "", success: false, error: `Tool not found: ${req.toolName}`, metadata: {} }
       }
+      const cached = cachedResult.value as any
 
-      const inst = await db.selectFrom("registry_instances").select(["publicUrl"])
-        .where("id", "=", cached.serviceId)
-        .where("lifecycle", "=", "active")
-        .executeTakeFirst()
-
-      if (!inst) {
+      const instResult = await gelQuery(() =>
+        queries.tsmSelectPublicUrlById(db, { id: cached.serviceId })
+      )
+      if (instResult.isErr() || !instResult.value) {
         return { resultJson: "", success: false, error: `Service offline for tool: ${req.toolName}`, metadata: {} }
       }
 
-      const client = new ToolServiceClient({ baseURL: inst.publicUrl })
+      const client = new ToolServiceClient({ baseURL: instResult.value.publicUrl })
       const result = await client.executeTool(req.toolName, req.argsJson, req.sessionToken)
 
       if (result.isErr()) {

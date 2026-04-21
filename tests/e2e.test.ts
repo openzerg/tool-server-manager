@@ -1,11 +1,11 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test"
 import { createServer, type Server } from "node:http"
 import { connectNodeAdapter } from "@connectrpc/connect-node"
-import { ToolServerManagerClient } from "@openzerg/common"
+import { ToolServerManagerClient } from "@openzerg/common-typescript"
 import { PodmanCompose, waitForPort } from "../../openzerg/e2e/compose-helper.js"
 import { openDB, autoMigrate } from "../src/db.js"
 import { createTSMRouter } from "../src/router.js"
-import type { PodClient } from "@openzerg/common/pod-client"
+import type { PodClient } from "@openzerg/common-typescript/pod-client"
 import { randomUUID } from "node:crypto"
 
 const PG_PORT = 15435
